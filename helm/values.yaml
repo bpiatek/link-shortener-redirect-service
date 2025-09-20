@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: link-shortener-redirect-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+serviceAccount:
+  name: link-shortener-redirect-service
+
+spring:
+  profiles:
+    active: "default"
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1"
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: "-XX:MaxRAMPercentage=75.0"
+
+vault:
+  role: ""
+  secretPath: ""
+  secretTemplate: ""

@@ -1,0 +1,18 @@
+replicaCount: 1
+
+spring:
+  profiles:
+    active: "prod"
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
+vault:
+  role: link-shortener-redirect-service-prod-role
+  secretPath: kv/data/prod/link-shortener-redirect-service/config
+  secretTemplate: |
+    {{- with secret "kv/data/prod/link-shortener-redirect-service/config" -}}
+    {{- range $key, $value := .Data.data }}
+    {{ $key }}={{ $value }}
+    {{- end }}
+    {{- end }}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds">
+
+    <!-- Standard console log pattern -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd'T'HH:mm:ss.SSS'Z'} %-5level [%thread] %logger{36} - %msg%n"/>
+
+    <!-- === Console Appenders === -->
+
+    <!-- Human-readable console appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- JSON console appender for Loki -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <fieldNames>
+                <message>message</message>
+                <version>[ignore]</version>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- === File Appender for SBA === -->
+    <appender name="SBA_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>/tmp/redirect-service.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- === Profiles === -->
+
+    <!-- Local profile: human-readable logs only -->
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Non-local profiles: JSON logs for Loki + file for SBA -->
+    <springProfile name="!local">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="SBA_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

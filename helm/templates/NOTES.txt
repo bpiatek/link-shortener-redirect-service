@@ -1,0 +1,10 @@
+Your {{ .Chart.Name }} application has been deployed.
+
+Release Name: {{ .Release.Name }}
+Namespace:    {{ .Release.Namespace }}
+
+To check the status of your pods, run:
+  kubectl get pods -n {{ .Release.Namespace }}
+
+To see the logs of your application, run:
+  kubectl logs -f -n {{ .Release.Namespace }} -l app={{ .Release.Name }}-{{ .Chart.Name }}

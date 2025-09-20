@@ -1,0 +1,7 @@
+settings.xml
+
+target/
+
+.idea/
+*.iml
+.env
