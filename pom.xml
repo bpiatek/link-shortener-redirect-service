@@ -31,6 +31,9 @@
         <spring-boot-admin.version>3.5.2</spring-boot-admin.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
+        <link-shortener-contracts.version>0.0.2</link-shortener-contracts.version>
+        <confluent.version>8.0.0</confluent.version>
+        <awaitility.version>4.3.0</awaitility.version>
     </properties>
 
     <dependencies>
@@ -78,6 +81,26 @@
             <artifactId>logstash-logback-encoder</artifactId>
             <version>${logstash-logback-encoder.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!--        KAFKA       -->
+        <dependency>
+            <groupId>pl.bpiatek</groupId>
+            <artifactId>link-shortener-contracts</artifactId>
+            <version> ${link-shortener-contracts.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-protobuf-serializer</artifactId>
+            <version>${confluent.version}</version>
+        </dependency>
 
         <!--        TEST        -->
         <dependency>
@@ -91,9 +114,30 @@
                 </exclusion>
             </exclusions>
         </dependency>
-            <dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>redpanda</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
