@@ -14,20 +14,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties(SecurityConfig.MonitoringUserProperties.class)
 class SecurityConfig {
-
-    private final GatewayHeaderFilter gatewayHeaderFilter;
-
-    SecurityConfig(GatewayHeaderFilter gatewayHeaderFilter) {
-        this.gatewayHeaderFilter = gatewayHeaderFilter;
-    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -53,7 +47,6 @@ class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
-                .addFilterBefore(gatewayHeaderFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 );
