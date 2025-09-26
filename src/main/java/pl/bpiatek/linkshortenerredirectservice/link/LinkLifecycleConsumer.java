@@ -25,30 +25,37 @@ class LinkLifecycleConsumer {
             containerFactory = "linkLifecycleEventsContainerFactory"
     )
     public void consumeLinkLifecycleEvent(LinkLifecycleEventProto.LinkLifecycleEvent event) {
-        switch (event.getEventPayloadCase()) {
-            case LINK_CREATED -> {
-                var payload = event.getLinkCreated();
-                var redisKey = REDIS_KEY_PREFIX + payload.getShortUrl();
-                log.info("Received LinkCreated event. Hydrating cache for key: {}", redisKey);
-                redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
-            }
-            case LINK_UPDATED -> {
-                // For cache hydration, an update is the same as a create: we set the value.
-                var payload = event.getLinkUpdated();
-                var redisKey = REDIS_KEY_PREFIX + payload.getShortUrl();
-                log.info("Received LinkUpdated event. Hydrating cache for key: {}", redisKey);
-                redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
-            }
-            case LINK_DELETED -> {
-                var payload = event.getLinkDeleted();
-                var redisKey = REDIS_KEY_PREFIX + payload.getShortUrl();
-                log.info("Received LinkDeleted event. Deleting key from cache: {}", redisKey);
-                redisTemplate.delete(redisKey);
-            }
+        var payloadCase = event.getEventPayloadCase();
+        switch (payloadCase) {
+            case LINK_CREATED -> handleLinkCreated(event.getLinkCreated());
+            case LINK_UPDATED -> handleLinkUpdated(event.getLinkUpdated());
+            case LINK_DELETED -> handleLinkDeleted(event.getLinkDeleted());
             case EVENTPAYLOAD_NOT_SET ->
                     log.warn("Received LinkLifecycleEvent with no payload set.");
             default ->
-                    log.warn("Received unknown event type in LinkLifecycleEvent: {}", event.getEventPayloadCase());
+                    log.warn("Received unknown event type in LinkLifecycleEvent: {}", payloadCase);
         }
+    }
+
+    private void handleLinkCreated(LinkLifecycleEventProto.LinkCreated payload) {
+        var redisKey = buildRedisKey(payload.getShortUrl());
+        log.info("Received LinkCreated event. Hydrating cache for key: {}", redisKey);
+        redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
+    }
+
+    private void handleLinkUpdated(LinkLifecycleEventProto.LinkUpdated payload) {
+        var redisKey = buildRedisKey(payload.getShortUrl());
+        log.info("Received LinkUpdated event. Hydrating cache for key: {}", redisKey);
+        redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
+    }
+
+    private void handleLinkDeleted(LinkLifecycleEventProto.LinkDeleted payload) {
+        var redisKey = buildRedisKey(payload.getShortUrl());
+        log.info("Received LinkDeleted event. Deleting key from cache: {}", redisKey);
+        redisTemplate.delete(redisKey);
+    }
+
+    private String buildRedisKey(String shortUrl) {
+        return REDIS_KEY_PREFIX + shortUrl;
     }
 }

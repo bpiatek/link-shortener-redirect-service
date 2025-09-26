@@ -1,5 +1,6 @@
 package pl.bpiatek.linkshortenerredirectservice.link;
 
+import com.google.protobuf.Timestamp;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -11,6 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
+import java.time.Clock;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -23,19 +25,27 @@ public class ClickEventProducer {
 
     private final KafkaTemplate<String, LinkClickEvent> kafkaTemplate;
     private final String topicName;
+    private final Clock clock;
 
     ClickEventProducer(KafkaTemplate<String, LinkClickEvent> kafkaTemplate,
-                       @Value("${topic.link.clicks}") String topicName) {
+                       @Value("${topic.link.clicks}") String topicName,
+                       Clock clock) {
         this.kafkaTemplate = kafkaTemplate;
         this.topicName = topicName;
+        this.clock = clock;
     }
 
     @Async
     public void sendClickEvent(String shortUrl, HttpServletRequest request) {
+        var now = clock.instant();
         var eventToSend = LinkClickEvent.newBuilder()
                 .setShortUrl(shortUrl)
                 .setIpAddress(getClientIp(request))
                 .setUserAgent(request.getHeader("User-Agent"))
+                .setClickedAt(Timestamp.newBuilder()
+                        .setSeconds(now.getEpochSecond())
+                        .setNanos(now.getNano())
+                        .build())
                 .build();
 
         var producerRecord = new ProducerRecord<>(topicName, shortUrl, eventToSend);
@@ -53,13 +63,15 @@ public class ClickEventProducer {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        var remoteAddr = "";
-        if (request != null) {
-            remoteAddr = request.getHeader("X-FORWARDED-FOR");
-            if (remoteAddr == null || remoteAddr.isEmpty()) {
-                remoteAddr = request.getRemoteAddr();
-            }
+        if (request == null) {
+            return "";
         }
-        return remoteAddr;
+
+        var ipAddress = request.getHeader("CF-Connecting-IP");
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        return ipAddress;
     }
 }

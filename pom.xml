@@ -31,7 +31,7 @@
         <spring-boot-admin.version>3.5.2</spring-boot-admin.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
         <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
-        <link-shortener-contracts.version>0.0.2</link-shortener-contracts.version>
+        <link-shortener-contracts.version>0.0.3</link-shortener-contracts.version>
         <confluent.version>8.0.0</confluent.version>
         <awaitility.version>4.3.0</awaitility.version>
     </properties>
@@ -127,16 +127,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>redpanda</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -1,5 +1,7 @@
 package pl.bpiatek.linkshortenerredirectservice.link;
 
+import com.google.protobuf.Timestamp;
+import com.google.protobuf.util.Timestamps;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.kafka.core.KafkaTemplate;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 import static java.nio.charset.StandardCharsets.*;
@@ -29,12 +33,16 @@ import static org.mockito.quality.Strictness.LENIENT;
 class ClickEventProducerTest {
 
     private static final String TEST_TOPIC = "test-link-clicks";
+    private final Instant now =Instant.parse("2025-08-22T10:00:00Z");
 
     @Mock
     private KafkaTemplate<String, LinkClickEvent> kafkaTemplate;
 
     @Mock
     private HttpServletRequest httpServletRequest;
+
+    @Mock
+    private Clock clock;
 
     @Captor
     private ArgumentCaptor<ProducerRecord<String, LinkClickEvent>> producerRecordCaptor;
@@ -43,7 +51,8 @@ class ClickEventProducerTest {
 
     @BeforeEach
     void setUp() {
-        clickEventProducer = new ClickEventProducer(kafkaTemplate, TEST_TOPIC);
+        clickEventProducer = new ClickEventProducer(kafkaTemplate, TEST_TOPIC, clock);
+        given(clock.instant()).willReturn(now);
     }
 
     @Test
@@ -75,7 +84,12 @@ class ClickEventProducerTest {
             s.assertThat(event.getShortUrl()).isEqualTo(shortCode);
             s.assertThat(event.getIpAddress()).isEqualTo(ipAddress);
             s.assertThat(event.getUserAgent()).isEqualTo(userAgent);
-            s.assertThat(event.hasClickedAt()).isFalse();
+            s.assertThat(event.getClickedAt()).isEqualTo(
+                    Timestamp.newBuilder()
+                            .setSeconds(now.getEpochSecond())
+                            .setNanos(now.getNano())
+                            .build()
+            );
             s.assertThat(new String(capturedRecord.headers().lastHeader("source").value(), UTF_8))
                     .isEqualTo("redirect-service");
             s.assertThat(capturedRecord.headers().lastHeader("trace-id")).isNotNull();
@@ -83,13 +97,13 @@ class ClickEventProducerTest {
     }
 
     @Test
-    void shouldUseXForwardedForHeaderWhenPresent() {
+    void shouldUseCFConnectingIPForHeaderWhenPresent() {
         // given:
         var shortCode = "proxy123";
         var realIp = "200.200.200.200";
         var proxyIp = "10.0.0.1";
 
-        given(httpServletRequest.getHeader("X-FORWARDED-FOR")).willReturn(realIp);
+        given(httpServletRequest.getHeader("CF-Connecting-IP")).willReturn(realIp);
         given(httpServletRequest.getRemoteAddr()).willReturn(proxyIp);
         given(httpServletRequest.getHeader("User-Agent")).willReturn("test-agent");
         given(kafkaTemplate.send(any(ProducerRecord.class)))
