@@ -35,13 +35,21 @@ public class ClickEventProducer {
         this.clock = clock;
     }
 
-    @Async
     public void sendClickEvent(String shortUrl, HttpServletRequest request) {
+        var ip = getClientIp(request);
+        var userAgent = request.getHeader("User-Agent");
+
+        doSendClickEvent(shortUrl, ip, userAgent);
+    }
+
+    @Async
+    protected void doSendClickEvent(String shortUrl, String ipAddress, String userAgent) {
         var now = clock.instant();
+
         var eventToSend = LinkClickEvent.newBuilder()
                 .setShortUrl(shortUrl)
-                .setIpAddress(getClientIp(request))
-                .setUserAgent(request.getHeader("User-Agent"))
+                .setIpAddress(ipAddress)
+                .setUserAgent(userAgent)
                 .setClickedAt(Timestamp.newBuilder()
                         .setSeconds(now.getEpochSecond())
                         .setNanos(now.getNano())
