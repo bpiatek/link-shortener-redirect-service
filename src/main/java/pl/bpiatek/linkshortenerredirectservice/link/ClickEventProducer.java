@@ -44,6 +44,7 @@ public class ClickEventProducer {
 
     @Async
     protected void doSendClickEvent(String shortUrl, String ipAddress, String userAgent) {
+        log.info("Is click event producer running in virtual thread: {}", Thread.currentThread().isVirtual());
         var now = clock.instant();
 
         var eventToSend = LinkClickEvent.newBuilder()

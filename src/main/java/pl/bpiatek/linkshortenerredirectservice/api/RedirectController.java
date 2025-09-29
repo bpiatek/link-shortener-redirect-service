@@ -1,6 +1,8 @@
 package pl.bpiatek.linkshortenerredirectservice.api;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import java.net.URI;
 @RestController
 class RedirectController {
 
+    private static final Logger log = LoggerFactory.getLogger(RedirectController.class);
     private static final String REDIS_KEY_PREFIX = "link:";
 
     private final StringRedisTemplate redisTemplate;
@@ -26,6 +29,7 @@ class RedirectController {
 
     @GetMapping("/{shortUrl}")
     public ResponseEntity<Void> redirect(@PathVariable String shortUrl, HttpServletRequest request) {
+        log.info("Is redirect endpoint running in virtual thread: {}", Thread.currentThread().isVirtual());
         var longUrl = redisTemplate.opsForValue().get(REDIS_KEY_PREFIX + shortUrl);
 
         if (longUrl != null) {
