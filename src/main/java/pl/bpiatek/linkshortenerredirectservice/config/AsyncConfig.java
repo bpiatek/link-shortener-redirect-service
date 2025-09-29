@@ -7,11 +7,12 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @Configuration
-@EnableAsync class AsyncConfig implements AsyncConfigurer {
+@EnableAsync
+class AsyncConfig implements AsyncConfigurer {
 
     private final TaskExecutor virtualThreadExecutor;
 
-    public AsyncConfig(@Qualifier("virtualThreadExecutor") TaskExecutor virtualThreadExecutor) {
+    AsyncConfig(@Qualifier("virtualThreadExecutor") TaskExecutor virtualThreadExecutor) {
         this.virtualThreadExecutor = virtualThreadExecutor;
     }
 

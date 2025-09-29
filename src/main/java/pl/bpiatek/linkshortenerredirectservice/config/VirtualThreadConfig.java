@@ -5,10 +5,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 
 @Configuration
-public class VirtualThreadConfig {
+class VirtualThreadConfig {
 
     @Bean(name = "virtualThreadExecutor")
-    public TaskExecutor virtualThreadTaskExecutor() {
-        return runnable -> Thread.ofVirtual().start(runnable);
+    TaskExecutor virtualThreadTaskExecutor() {
+        return runnable -> Thread.ofVirtual().name("virtual-", 0).start(runnable);
     }
 }
