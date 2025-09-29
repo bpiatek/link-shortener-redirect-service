@@ -19,10 +19,12 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 import pl.bpiatek.contracts.link.LinkLifecycleEventProto.LinkLifecycleEvent;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 @Configuration
 @EnableKafka
@@ -64,6 +66,10 @@ class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, LinkLifecycleEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(linkLifecycleEventConsumerFactory());
+        factory.getContainerProperties()
+                .setListenerTaskExecutor(new ConcurrentTaskExecutor(
+                        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory())
+                ));
         return factory;
     }
 
