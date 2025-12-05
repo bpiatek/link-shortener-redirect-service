@@ -44,6 +44,9 @@ class ClickEventProducerTest {
     @Mock
     private Clock clock;
 
+    @Mock
+    private ClickEventPublisher clickEventPublisher;
+
     @Captor
     private ArgumentCaptor<ProducerRecord<String, LinkClickEvent>> producerRecordCaptor;
 
@@ -51,7 +54,7 @@ class ClickEventProducerTest {
 
     @BeforeEach
     void setUp() {
-        clickEventProducer = new ClickEventProducer(kafkaTemplate, TEST_TOPIC, clock);
+        clickEventProducer = new ClickEventProducer(clickEventPublisher);
         given(clock.instant()).willReturn(now);
     }
 

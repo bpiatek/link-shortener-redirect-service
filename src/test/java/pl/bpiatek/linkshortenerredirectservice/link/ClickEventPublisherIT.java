@@ -16,7 +16,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class ClickEventProducerIT implements WithFullInfrastructure{
+class ClickEventPublisherIT implements WithFullInfrastructure {
 
     @DynamicPropertySource
     static void kafkaProperties(DynamicPropertyRegistry registry) {
@@ -26,7 +26,7 @@ class ClickEventProducerIT implements WithFullInfrastructure{
     }
 
     @Autowired
-    private ClickEventProducer clickEventProducer;
+    private ClickEventPublisher clickEventPublisher;
 
     @Autowired
     private TestClickEventConsumer testConsumer;
@@ -48,13 +48,13 @@ class ClickEventProducerIT implements WithFullInfrastructure{
         request.setRemoteAddr(ipAddress);
 
         // when
-        clickEventProducer.sendClickEvent(shortCode, request);
+        clickEventPublisher.doSendClickEvent(shortCode, ipAddress, userAgent);
 
         // then
         var record = testConsumer.awaitRecord(10, TimeUnit.SECONDS);
         assertSoftly(softly -> {
-            softly.assertThat(record).as("Consumed Kafka record").isNotNull();
-            softly.assertThat(record.key()).as("Kafka message key").isEqualTo(shortCode);
+            softly.assertThat(record).isNotNull();
+            softly.assertThat(record.key()).isEqualTo(shortCode);
 
             var message = record.value();
             softly.assertThat(message.getShortUrl()).isEqualTo(shortCode);
@@ -63,8 +63,7 @@ class ClickEventProducerIT implements WithFullInfrastructure{
 
             var headers = record.headers();
             softly.assertThat(new String(headers.lastHeader("source").value(), UTF_8))
-                    .as("Kafka 'source' header").isEqualTo("redirect-service");
-            softly.assertThat(headers.lastHeader("trace-id").value()).as("Kafka 'trace-id' header").isNotNull();
+                    .isEqualTo("redirect-service");
         });
     }
 }

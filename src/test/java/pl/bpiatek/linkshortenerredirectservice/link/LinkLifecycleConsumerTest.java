@@ -10,7 +10,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import pl.bpiatek.contracts.link.LinkLifecycleEventProto.LinkCreated;
 import pl.bpiatek.contracts.link.LinkLifecycleEventProto.LinkDeleted;
 import pl.bpiatek.contracts.link.LinkLifecycleEventProto.LinkLifecycleEvent;

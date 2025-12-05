@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import pl.bpiatek.contracts.link.LinkClickEventProto;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
 import java.util.concurrent.CountDownLatch;

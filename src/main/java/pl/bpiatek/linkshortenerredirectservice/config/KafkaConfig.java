@@ -3,15 +3,17 @@ package pl.bpiatek.linkshortenerredirectservice.config;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -19,12 +21,10 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 import pl.bpiatek.contracts.link.LinkLifecycleEventProto.LinkLifecycleEvent;
 
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 @Configuration
 @EnableKafka
@@ -46,8 +46,13 @@ class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, LinkClickEvent> linkClickEventKafkaTemplate() {
-        return new KafkaTemplate<>(linkClickEventProducerFactory());
+    public KafkaTemplate<String, LinkClickEvent> linkClickEventKafkaTemplate(ObservationRegistry observationRegistry) {
+        var template = new KafkaTemplate<>(linkClickEventProducerFactory());
+
+        template.setObservationEnabled(true);
+        template.setObservationRegistry(observationRegistry);
+
+        return template;
     }
 
     @Bean
@@ -62,21 +67,23 @@ class KafkaConfig {
 
     @Bean
     @Primary
-    public ConcurrentKafkaListenerContainerFactory<String, LinkLifecycleEvent> linkLifecycleEventsContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, LinkLifecycleEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(linkLifecycleEventConsumerFactory());
-        factory.getContainerProperties()
-                .setListenerTaskExecutor(new ConcurrentTaskExecutor(
-                        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory())
-                ));
+    public ConcurrentKafkaListenerContainerFactory<String, LinkLifecycleEvent> linkLifecycleEventsContainerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
+            ConsumerFactory<String, LinkLifecycleEvent> linkLifecycleEventConsumerFactory) {
+        var factory = new ConcurrentKafkaListenerContainerFactory<String, LinkLifecycleEvent>();
+
+        configurer.configure(
+                (ConcurrentKafkaListenerContainerFactory) factory,
+                (ConsumerFactory) linkLifecycleEventConsumerFactory
+        );
+
         return factory;
     }
 
     private void putSchemaRegistryUrl(Map<String, Object> props) {
         var registryUrl = kafkaProperties.getProperties().get("schema.registry.url");
         if (registryUrl != null) {
-            props.put("schema.registry.url", registryUrl);
+            props.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, registryUrl);
         }
     }
 }
