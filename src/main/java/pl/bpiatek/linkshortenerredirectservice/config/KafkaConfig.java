@@ -1,5 +1,6 @@
 package pl.bpiatek.linkshortenerredirectservice.config;
 
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
@@ -41,6 +42,8 @@ class KafkaConfig {
         Map<String, Object> props = kafkaProperties.buildProducerProperties(null);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class);
+        props.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, false);
+        props.put(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true);
         putSchemaRegistryUrl(props);
         return new DefaultKafkaProducerFactory<>(props);
     }
