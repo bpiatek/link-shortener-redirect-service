@@ -46,7 +46,7 @@ class RedirectController {
 
         if (jsonValue == null) {
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(uiUrl + "/404"))
+                    .location(URI.create("/404"))
                     .build();
         }
 
@@ -55,7 +55,7 @@ class RedirectController {
 
             if (!redirectInfo.isActive()) {
                 return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create(uiUrl + "/inactive"))
+                        .location(URI.create("/inactive"))
                         .build();
             }
 
