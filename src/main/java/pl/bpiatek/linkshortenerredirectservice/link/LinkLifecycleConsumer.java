@@ -1,5 +1,7 @@
 package pl.bpiatek.linkshortenerredirectservice.link;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -13,9 +15,11 @@ class LinkLifecycleConsumer {
     private static final Logger log = LoggerFactory.getLogger(LinkLifecycleConsumer.class);
     private static final String REDIS_KEY_PREFIX = "link:";
 
+    private final ObjectMapper objectMapper;
     private final StringRedisTemplate redisTemplate;
 
-    LinkLifecycleConsumer(StringRedisTemplate redisTemplate) {
+    LinkLifecycleConsumer(ObjectMapper objectMapper, StringRedisTemplate redisTemplate) {
+        this.objectMapper = objectMapper;
         this.redisTemplate = redisTemplate;
     }
 
@@ -39,8 +43,15 @@ class LinkLifecycleConsumer {
 
     private void handleLinkCreated(LinkLifecycleEventProto.LinkCreated payload) {
         var redisKey = buildRedisKey(payload.getShortUrl());
-        log.info("Received LinkCreated event. Hydrating cache for key: {}", redisKey);
-        redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
+        var info = new RedirectInfo(payload.getLongUrl(), payload.getIsActive());
+
+        try {
+            log.info("Received LinkCreated event. Hydrating cache for key: {}", redisKey);
+            var jsonValue = objectMapper.writeValueAsString(info);
+            redisTemplate.opsForValue().set(redisKey, jsonValue);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize redirect info", e);
+        }
     }
 
     private void handleLinkUpdated(LinkLifecycleEventProto.LinkUpdated payload) {
