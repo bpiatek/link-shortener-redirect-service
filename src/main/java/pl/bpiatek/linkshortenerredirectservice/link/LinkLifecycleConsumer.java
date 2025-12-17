@@ -56,8 +56,15 @@ class LinkLifecycleConsumer {
 
     private void handleLinkUpdated(LinkLifecycleEventProto.LinkUpdated payload) {
         var redisKey = buildRedisKey(payload.getShortUrl());
-        log.info("Received LinkUpdated event. Hydrating cache for key: {}", redisKey);
-        redisTemplate.opsForValue().set(redisKey, payload.getLongUrl());
+        var info = new RedirectInfo(payload.getLongUrl(), payload.getIsActive());
+
+        try {
+            log.info("Received LinkUpdated event. Hydrating cache for key: {}", redisKey);
+            var jsonValue = objectMapper.writeValueAsString(info);
+            redisTemplate.opsForValue().set(redisKey, jsonValue);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize redirect info", e);
+        }
     }
 
     private void handleLinkDeleted(LinkLifecycleEventProto.LinkDeleted payload) {
