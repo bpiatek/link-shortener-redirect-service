@@ -44,6 +44,14 @@ jobs:
             </settings>" > "$SETTINGS_FILE"
           echo "Maven settings.xml for Docker created."
 
+      - name: Run Maven Tests
+        run: |
+          echo "Running unit tests..."
+          # We use the settings.xml created above. 
+          # If tests fail, 'mvn' returns exit code 1, and the pipeline STOPS here.
+          mvn -s settings.xml clean test
+          echo "Tests passed successfully."
+          
       - name: Get Image Tag and Name
         id: image_info
         run: |
