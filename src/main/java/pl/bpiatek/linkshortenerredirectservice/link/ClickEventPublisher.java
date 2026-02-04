@@ -38,7 +38,6 @@ public class ClickEventPublisher {
 
     @Async
     public void doSendClickEvent(String shortUrl, String ipAddress, String userAgent) {
-        log.info("Is click event publisher running in virtual thread: {}", Thread.currentThread().isVirtual());
         var now = clock.instant();
         var eventId = UUID.randomUUID().toString();
 

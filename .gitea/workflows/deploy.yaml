@@ -11,6 +11,9 @@ on:
         options:
           - dev
           - prod
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
@@ -18,6 +21,7 @@ jobs:
     runs-on: java21-build
     env:
       DOCKER_BUILDKIT: 1
+      TARGET_ENV: ${{ github.event.inputs.environment || 'dev' }}
 
     steps:
       - name: Checkout Code
@@ -67,13 +71,13 @@ jobs:
       - name: Run Helm Upgrade
         run: |
           set -euo pipefail
-          echo "Deploying with Helm..."
+          echo "Deploying with Helm to: $TARGET_ENV"
           sudo /snap/bin/microk8s helm upgrade --install \
-            link-shortener-redirect-service-${{ github.event.inputs.environment }} \
+            link-shortener-redirect-service-$TARGET_ENV \
             ./helm \
-            --namespace ${{ github.event.inputs.environment }} \
-            --values helm/values-${{ github.event.inputs.environment }}.yaml \
+            --namespace $TARGET_ENV \
+            --values helm/values-$TARGET_ENV.yaml \
             --set image.repository=${{ steps.image_info.outputs.name }} \
             --set image.tag=${{ steps.image_info.outputs.tag }} \
-            --set spring.profiles.active=${{ github.event.inputs.environment }}
+            --set spring.profiles.active=$TARGET_ENV
           echo "Helm deployment finished."

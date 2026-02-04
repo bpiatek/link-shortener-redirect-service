@@ -41,7 +41,6 @@ class RedirectController {
 
     @GetMapping("/{shortUrl}")
     public ResponseEntity<Void> redirect(@PathVariable String shortUrl, HttpServletRequest request) {
-        log.info("Is redirect endpoint running in virtual thread: {}", Thread.currentThread().isVirtual());
         var jsonValue = redisTemplate.opsForValue().get(REDIS_KEY_PREFIX + shortUrl);
 
         if (jsonValue == null) {

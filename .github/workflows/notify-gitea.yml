@@ -1,0 +1,28 @@
+name: Notify Gitea Mirror
+
+on:
+  push:
+    branches: [ "**" ] # Trigger on every branch push
+
+jobs:
+  trigger-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force Gitea Mirror Sync
+        run: |
+          GITEA_OWNER="bn_user" 
+          GITEA_REPO="${{ github.event.repository.name }}"
+
+          echo "Triggering immediate mirror sync for $GITEA_OWNER/$GITEA_REPO..."
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "${{ secrets.GITEA_URL }}/$GITEA_OWNER/$GITEA_REPO/mirror-sync" \
+            -H "Authorization: token ${{ secrets.GITEA_TOKEN }}" \
+            -H "Content-Type: application/json")
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Success: Gitea is syncing."
+          else
+            echo "❌ Error: Failed to trigger sync. HTTP Code: $HTTP_CODE"
+            exit 1
+          fi
