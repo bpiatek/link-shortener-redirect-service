@@ -49,7 +49,7 @@ jobs:
           echo "Running unit tests..."
           # We use the settings.xml created above. 
           # If tests fail, 'mvn' returns exit code 1, and the pipeline STOPS here.
-          mvn -s settings.xml clean test
+          mvn -s settings.xml clean verify
           echo "Tests passed successfully."
           
       - name: Get Image Tag and Name
