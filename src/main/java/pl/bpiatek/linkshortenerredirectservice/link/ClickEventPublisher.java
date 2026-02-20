@@ -13,6 +13,8 @@ import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
 import java.time.Clock;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.slf4j.LoggerFactory.*;
@@ -28,6 +30,8 @@ public class ClickEventPublisher {
     private final String topicName;
     private final Clock clock;
 
+    private final ExecutorService analyticsExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
     ClickEventPublisher(KafkaTemplate<String, LinkClickEvent> kafkaTemplate,
                         @Value("${topic.link.clicks}") String topicName,
                         Clock clock) {
@@ -36,15 +40,26 @@ public class ClickEventPublisher {
         this.clock = clock;
     }
 
-    @Async
-    public void doSendClickEvent(String shortUrl, String ipAddress, String userAgent) {
+    public void publishSafe(String shortUrl, String ipAddress, String userAgent) {
+        //  Capture the trace/MDC context from the Tomcat/Web thread
+        var snapshot = snapshotFactory.captureAll();
+
+        //  Offload to a Virtual Thread to prevent Kafka metadata timeouts from blocking the 302 redirect
+        analyticsExecutor.submit(() -> {
+            try (var scope = snapshot.setThreadLocals()) {
+                doSendClickEvent(shortUrl, ipAddress, userAgent);
+            }
+        });
+    }
+
+    void doSendClickEvent(String shortUrl, String ipAddress, String userAgent) {
         var now = clock.instant();
         var eventId = UUID.randomUUID().toString();
 
         var event = LinkClickEvent.newBuilder()
                 .setShortUrl(shortUrl)
-                .setIpAddress(ipAddress)
-                .setUserAgent(userAgent)
+                .setIpAddress(ipAddress != null ? ipAddress : "UNKNOWN")
+                .setUserAgent(userAgent != null ? userAgent : "UNKNOWN")
                 .setClickedAt(Timestamp.newBuilder()
                         .setSeconds(now.getEpochSecond())
                         .setNanos(now.getNano())
@@ -56,15 +71,13 @@ public class ClickEventPublisher {
         producerRecord.headers().add(new RecordHeader("event-id", eventId.getBytes(UTF_8)));
 
 
-        var snapshot = snapshotFactory.captureAll();
         kafkaTemplate.send(producerRecord).whenComplete((result, ex) -> {
-            try (var scope = snapshot.setThreadLocals()) {
-                if (ex == null) {
-                    log.info("Successfully published LinkClickEvent for shortCode: {} with eventId: {}", shortUrl, eventId);
-                } else {
-                    log.error("Failed to publish LinkClickEvent for shortCode: {}. Reason: {}", shortUrl, ex.getMessage());
-                }
+            if (ex == null) {
+                log.info("Successfully published LinkClickEvent for shortCode: {} with eventId: {}", shortUrl, eventId);
+            } else {
+                log.error("Failed to publish LinkClickEvent for shortCode: {}. Reason: {}", shortUrl, ex.getMessage());
             }
+
         });
     }
 }

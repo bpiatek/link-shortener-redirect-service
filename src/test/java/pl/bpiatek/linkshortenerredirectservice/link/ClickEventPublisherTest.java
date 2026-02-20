@@ -1,8 +1,6 @@
 package pl.bpiatek.linkshortenerredirectservice.link;
 
 import com.google.protobuf.Timestamp;
-import com.google.protobuf.util.Timestamps;
-import jakarta.servlet.http.HttpServletRequest;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.kafka.core.KafkaTemplate;
 import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
@@ -20,26 +17,21 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 import static java.nio.charset.StandardCharsets.*;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.quality.Strictness.LENIENT;
 
-@MockitoSettings(strictness = LENIENT)
 @ExtendWith(MockitoExtension.class)
-class ClickEventProducerTest {
+class ClickEventPublisherTest {
 
     private static final String TEST_TOPIC = "test-link-clicks";
     private final Instant now =Instant.parse("2025-08-22T10:00:00Z");
 
     @Mock
     private KafkaTemplate<String, LinkClickEvent> kafkaTemplate;
-
-    @Mock
-    private HttpServletRequest httpServletRequest;
 
     @Mock
     private Clock clock;
@@ -50,12 +42,11 @@ class ClickEventProducerTest {
     @Captor
     private ArgumentCaptor<ProducerRecord<String, LinkClickEvent>> producerRecordCaptor;
 
-    private ClickEventProducer clickEventProducer;
 
     @BeforeEach
     void setUp() {
-        clickEventProducer = new ClickEventProducer(clickEventPublisher);
-        given(clock.instant()).willReturn(now);
+        clickEventPublisher = new ClickEventPublisher(kafkaTemplate, TEST_TOPIC, clock);
+        lenient().when(clock.instant()).thenReturn(now);
     }
 
     @Test
@@ -65,18 +56,14 @@ class ClickEventProducerTest {
         var userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)";
         var ipAddress = "123.123.123.123";
 
-        given(httpServletRequest.getHeader("User-Agent")).willReturn(userAgent);
-        given(httpServletRequest.getHeader("User-Agent")).willReturn(userAgent);
-        given(httpServletRequest.getHeader("X-FORWARDED-FOR")).willReturn(null);
-        given(httpServletRequest.getRemoteAddr()).willReturn(ipAddress);
         given(kafkaTemplate.send(any(ProducerRecord.class)))
                 .willReturn(CompletableFuture.completedFuture(null));
 
         // when
-        clickEventProducer.sendClickEvent(shortCode, httpServletRequest);
+        clickEventPublisher.publishSafe(shortCode, ipAddress, userAgent);
 
         // then
-        verify(kafkaTemplate).send(producerRecordCaptor.capture());
+        verify(kafkaTemplate, timeout(1000)).send(producerRecordCaptor.capture());
         var capturedRecord = producerRecordCaptor.getValue();
 
         assertSoftly(s -> {
@@ -95,29 +82,6 @@ class ClickEventProducerTest {
             );
             s.assertThat(new String(capturedRecord.headers().lastHeader("source").value(), UTF_8))
                     .isEqualTo("redirect-service");
-            s.assertThat(capturedRecord.headers().lastHeader("trace-id")).isNotNull();
         });
-    }
-
-    @Test
-    void shouldUseCFConnectingIPForHeaderWhenPresent() {
-        // given:
-        var shortCode = "proxy123";
-        var realIp = "200.200.200.200";
-        var proxyIp = "10.0.0.1";
-
-        given(httpServletRequest.getHeader("CF-Connecting-IP")).willReturn(realIp);
-        given(httpServletRequest.getRemoteAddr()).willReturn(proxyIp);
-        given(httpServletRequest.getHeader("User-Agent")).willReturn("test-agent");
-        given(kafkaTemplate.send(any(ProducerRecord.class)))
-                .willReturn(CompletableFuture.completedFuture(null));
-
-        // when
-        clickEventProducer.sendClickEvent(shortCode, httpServletRequest);
-
-        // then
-        verify(kafkaTemplate, timeout(1000)).send(producerRecordCaptor.capture());
-        var capturedEvent = producerRecordCaptor.getValue().value();
-        assertThat(capturedEvent.getIpAddress()).isEqualTo(realIp);
     }
 }

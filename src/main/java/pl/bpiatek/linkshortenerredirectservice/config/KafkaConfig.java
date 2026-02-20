@@ -10,6 +10,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +33,8 @@ import java.util.Map;
 @EnableKafka
 class KafkaConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(KafkaConfig.class);
+
     private final KafkaProperties kafkaProperties;
 
     public KafkaConfig(KafkaProperties kafkaProperties) {
@@ -40,10 +44,12 @@ class KafkaConfig {
     @Bean
     public ProducerFactory<String, LinkClickEvent> linkClickEventProducerFactory() {
         Map<String, Object> props = kafkaProperties.buildProducerProperties(null);
+
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class);
-        props.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, false);
-        props.put(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true);
+
+        props.putIfAbsent(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, false);
+        props.putIfAbsent(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, true);
         putSchemaRegistryUrl(props);
         return new DefaultKafkaProducerFactory<>(props);
     }
