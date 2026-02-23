@@ -72,7 +72,7 @@ class RedirectController {
 
     private ResponseEntity<Void> redirectToUi(String path) {
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(uiUrl + path))
+                .location(URI.create(path))
                 .build();
     }
 }

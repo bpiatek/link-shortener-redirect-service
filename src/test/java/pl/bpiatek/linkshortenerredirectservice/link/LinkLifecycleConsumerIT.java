@@ -26,7 +26,7 @@ import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class LinkLifecycleConsumerTest implements WithFullInfrastructure {
+class LinkLifecycleConsumerIT implements WithFullInfrastructure {
 
     @Autowired
     private KafkaTemplate<String, LinkLifecycleEvent> kafkaTemplate;

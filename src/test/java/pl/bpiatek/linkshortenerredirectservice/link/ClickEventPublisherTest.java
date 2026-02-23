@@ -14,13 +14,13 @@ import pl.bpiatek.contracts.link.LinkClickEventProto.LinkClickEvent;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.concurrent.CompletableFuture;
 
 import static java.nio.charset.StandardCharsets.*;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -34,19 +34,17 @@ class ClickEventPublisherTest {
     private KafkaTemplate<String, LinkClickEvent> kafkaTemplate;
 
     @Mock
-    private Clock clock;
-
-    @Mock
     private ClickEventPublisher clickEventPublisher;
 
     @Captor
     private ArgumentCaptor<ProducerRecord<String, LinkClickEvent>> producerRecordCaptor;
 
-
     @BeforeEach
     void setUp() {
+        var clock = Clock.fixed(
+                Instant.parse("2025-08-22T10:00:00Z"),
+                ZoneOffset.UTC);
         clickEventPublisher = new ClickEventPublisher(kafkaTemplate, TEST_TOPIC, clock);
-        lenient().when(clock.instant()).thenReturn(now);
     }
 
     @Test
