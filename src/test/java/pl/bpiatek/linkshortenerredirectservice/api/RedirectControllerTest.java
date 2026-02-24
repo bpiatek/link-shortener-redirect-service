@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(RedirectController.class)
 @Import(TestSecurityConfiguration.class)
-@TestPropertySource(properties = "app.ui.url=https://test-ui.com")
 class RedirectControllerTest {
 
     @Autowired

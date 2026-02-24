@@ -37,7 +37,6 @@ class RedirectCacheRepositoryIT implements WithFullInfrastructure {
 
     @AfterEach
     void tearDown() {
-        // Clean up Redis after every test to prevent data leakage
         redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
     }
 

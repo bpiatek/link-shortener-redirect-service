@@ -77,7 +77,6 @@ public class ClickEventPublisher {
             } else {
                 log.error("Failed to publish LinkClickEvent for shortCode: {}. Reason: {}", shortUrl, ex.getMessage());
             }
-
         });
     }
 }

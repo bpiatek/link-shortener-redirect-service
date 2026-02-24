@@ -1,12 +1,8 @@
 package pl.bpiatek.linkshortenerredirectservice.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -28,14 +24,11 @@ class RedirectController {
 
     private final RedirectCacheRepository redirectRepository;
     private final ClickEventPublisher clickEventPublisher;
-    private final String uiUrl;
 
     RedirectController(RedirectCacheRepository redirectRepository,
-                       ClickEventPublisher clickEventPublisher,
-                       @Value("${app.ui.url}") String uiUrl) {
+                       ClickEventPublisher clickEventPublisher) {
         this.redirectRepository = redirectRepository;
         this.clickEventPublisher = clickEventPublisher;
-        this.uiUrl = uiUrl;
     }
 
     @GetMapping("/{shortUrl}")
