@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Import;
 @Import({
         SecurityConfig.class,
         ActuatorSecurityFilterChain.class,
-        PrometheusSecurityFilterChain.class
+        PublicActuatorSecurityFilterChainConfig.class
 })
 public class TestSecurityConfiguration {
 }

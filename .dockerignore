@@ -1,7 +1,9 @@
 settings.xml
-
-target/
-
 .idea/
 *.iml
 .env
+
+target/*
+
+!target/extracted
+!target/extracted/**

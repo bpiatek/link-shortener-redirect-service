@@ -11,4 +11,6 @@ spec:
   endpoints:
     - port: http-metrics
       path: '/actuator/prometheus'
-      interval: 15s
+      interval: 30s
+      scrapeTimeout: 25s
+      honorLabels: true

@@ -6,6 +6,11 @@ metadata:
     app: {{ .Release.Name }}-{{ .Chart.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: {{ .Release.Name }}-{{ .Chart.Name }}
@@ -18,20 +23,57 @@ spec:
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/auth-path: "auth/kubernetes"
 
+        vault.hashicorp.com/agent-requests-cpu: {{ .Values.vault.agent.resources.requests.cpu | quote }}
+        vault.hashicorp.com/agent-requests-mem: {{ .Values.vault.agent.resources.requests.memory | quote }}
+        vault.hashicorp.com/agent-limits-cpu: {{ .Values.vault.agent.resources.limits.cpu | quote }}
+        vault.hashicorp.com/agent-limits-mem: {{ .Values.vault.agent.resources.limits.memory | quote }}
+
         vault.hashicorp.com/agent-inject-secret-application.properties: {{ .Values.vault.secretPath | quote }}
         vault.hashicorp.com/agent-inject-template-application.properties: |
           {{- .Values.vault.secretTemplate | nindent 10 }}
 
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      terminationGracePeriodSeconds: 40
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: JAVA_TOOL_OPTIONS
-              value: "-XX:MaxRAMPercentage=75.0"
             - name: SPRING_PROFILES_ACTIVE
               value: "{{ .Values.spring.profiles.active }}"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            {{- if .Values.env }}
+            {{- toYaml .Values.env | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "sh", "-c", "sleep 10" ]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

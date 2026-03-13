@@ -10,13 +10,16 @@ import org.springframework.security.web.SecurityFilterChain;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @Configuration
-class PrometheusSecurityFilterChain {
+class PublicActuatorSecurityFilterChainConfig {
 
     @Bean
     @Order(1)
     SecurityFilterChain prometheusFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/actuator/prometheus")
+                .securityMatcher(
+                        "/actuator/prometheus",
+                        "/actuator/health/liveness",
+                        "/actuator/health/readiness")
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
